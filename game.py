@@ -11,13 +11,13 @@ class Game2048:
 		self.board = []
 		for _ in range(size):
 			self.board.append([0] * size)
-		# self.board = [
-		# 		[0, 0, 2, 0],
-		# 		[0, 2, 2, 0],
-		# 		[0, 2, 2, 0],
-		# 		[0, 0, 2, 0]
-		# ]
-		self.new_appear_location = self._random_appear()
+		self.board = [
+				[0, 0, 2, 0],
+				[0, 2, 2, 0],
+				[0, 2, 2, 0],
+				[0, 0, 2, 0]
+		]
+		self.new_appear_location = self._random_appear(4)
 		if self.on_terminal:
 			self._display()
 
@@ -40,8 +40,10 @@ class Game2048:
 	def move(self, direction: str):
 		if self.game_over is False:
 			move_tracker, merge_tracker = self._move(direction)
+			# for r in merge_tracker:
+			# 	print(r)
 			print(f'moved {direction}')
-			num_and_pos = self._random_appear()
+			num_and_pos = self._random_appear(self.num_random_appear)
 			if self.on_terminal:
 				self._display()
 			self.check_game_state()
@@ -74,7 +76,10 @@ class Game2048:
 								break
 							element_move_tracker += 1
 							merged_index = j
-							merge_tracker[row_index][j] = row[i]*2
+							if direction == 'left':
+								merge_tracker[row_index][j] = row[i]*2
+							else:
+								merge_tracker[row_index][self.size-1-j] = row[i]*2
 							break
 						if row[j] != 0:
 							break
@@ -85,8 +90,6 @@ class Game2048:
 					else:
 						move_tracker[row_index][self.size-1-i] = element_move_tracker
 				if direction=='right':
-					merge_tracker = [list(reversed(row_merge_tracker)) for row_merge_tracker in merge_tracker]
-					# move_tracker = [list(reversed(row_move_tracker)) for row_move_tracker in move_tracker]
 					self.board[row_index] = list(reversed(row))
 			return move_tracker, merge_tracker
 		elif direction in ['up', 'down']:
@@ -128,23 +131,23 @@ class Game2048:
 			return move_tracker, merge_tracker
 
 
-	def _random_appear(self) -> list[int, tuple[int]]:
+	def _random_appear(self, num_random_appear) -> list[int, tuple[int]]:
 		# get all 0 positions
 		available_positions = get_available_positions(self.board)
 		if len(available_positions) == 0:
 			return
 		choices = [2, 4]
-		weights = [9, 8]
-		check_largest_num = [8, 16, 32, 64, 128, 256, 512]
-		for i, num in enumerate(check_largest_num):
-			if get_largest_num(self.board) > num:
-				choices.append(num)
-				weights.append(7-i)
-				continue
-			break
+		weights = [4, 1]
+		# check_largest_num = [8, 16, 32, 64, 128, 256, 512]
+		# for i, num in enumerate(check_largest_num):
+		# 	if get_largest_num(self.board) > num:
+		# 		choices.append(num)
+		# 		weights.append(9-i)
+		# 		continue
+		# 	break
 		num_and_pos = []
-		pos = random.choices(available_positions, k=self.num_random_appear)
-		for i in range(self.num_random_appear):
+		pos = random.choices(available_positions, k=num_random_appear)
+		for i in range(num_random_appear):
 			num = random.choices(choices, weights, k=1)[0]
 			self.board[pos[i][0]][pos[i][1]] = num
 			num_and_pos.append([num, pos[i]])
@@ -173,6 +176,6 @@ class Game2048:
 
 if __name__ == '__main__':
 	game = Game2048(size=4, num_random_appear=2, on_terminal=True)
-	game.move('right')
+	# game.move('up')
 	# game.move('right')
 	# game.move('right')
