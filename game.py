@@ -12,12 +12,11 @@ class Game2048:
 		for _ in range(size):
 			self.board.append([0] * size)
 		# self.board = [
-		# 		[4, 0, 0, 2],
-		# 		[4, 0, 0, 4],
 		# 		[0, 0, 2, 0],
-		# 		[4, 4, 0, 4]
+		# 		[0, 2, 2, 0],
+		# 		[0, 2, 2, 0],
+		# 		[0, 0, 2, 0]
 		# ]
-		self.move_tracker = [[0]*size for i in range(size)]
 		self.new_appear_location = self._random_appear()
 		if self.on_terminal:
 			self._display()
@@ -39,16 +38,14 @@ class Game2048:
 
 
 	def move(self, direction: str):
-		move_tracker = None
 		if self.game_over is False:
-			move_tracker = self._move(direction)
-
+			move_tracker, merge_tracker = self._move(direction)
 			print(f'moved {direction}')
 			num_and_pos = self._random_appear()
 			if self.on_terminal:
 				self._display()
 			self.check_game_state()
-			return move_tracker, num_and_pos
+			return move_tracker, merge_tracker, num_and_pos
 	def can_move(self, direction):
 		if direction in ['left', 'right']:
 			for i in range(self.size):
@@ -58,9 +55,9 @@ class Game2048:
 
 
 	def _move(self, direction) -> list[list[int]]:
-		move_tracker = [[0]*self.size for i in range(self.size)]
+		move_tracker = [[0]*self.size for _ in range(self.size)]
+		merge_tracker = [[0]*self.size for _ in range(self.size)]
 		if direction in ['left', 'right']:
-			
 			for row_index, row in enumerate(self.board):
 				merged_index = -1
 				if direction=='right':
@@ -77,15 +74,21 @@ class Game2048:
 								break
 							element_move_tracker += 1
 							merged_index = j
+							merge_tracker[row_index][j] = row[i]*2
 							break
 						if row[j] != 0:
 							break
 					if element_move_tracker != 0:
 						row[i-element_move_tracker], row[i] = row[i-element_move_tracker]+row[i], 0
-					move_tracker[row_index][i] = element_move_tracker
+					if direction == 'left':
+						move_tracker[row_index][i] = element_move_tracker
+					else:
+						move_tracker[row_index][self.size-1-i] = element_move_tracker
 				if direction=='right':
+					merge_tracker = [list(reversed(row_merge_tracker)) for row_merge_tracker in merge_tracker]
+					# move_tracker = [list(reversed(row_move_tracker)) for row_move_tracker in move_tracker]
 					self.board[row_index] = list(reversed(row))
-			return move_tracker if direction=='left' else [list(reversed(row_move_tracker)) for row_move_tracker in move_tracker]
+			return move_tracker, merge_tracker
 		elif direction in ['up', 'down']:
 			for column_index in range(self.size):
 				col = [row[column_index] for row in self.board]
@@ -104,6 +107,10 @@ class Game2048:
 								break
 							element_move_tracker += 1
 							merged_index = j
+							if direction == 'up':
+								merge_tracker[j][column_index] = col[j]*2
+							else:
+								merge_tracker[self.size-1-j][column_index] = col[j]*2
 							break
 						if col[j] != 0:
 							break
@@ -118,7 +125,7 @@ class Game2048:
 					col = list(reversed(col))
 				for i in range(self.size):
 					self.board[i][column_index] = col[i]
-			return move_tracker
+			return move_tracker, merge_tracker
 
 
 	def _random_appear(self) -> list[int, tuple[int]]:
@@ -166,6 +173,6 @@ class Game2048:
 
 if __name__ == '__main__':
 	game = Game2048(size=4, num_random_appear=2, on_terminal=True)
-	game.move('up')
-	# game.move('down')
-	# game.move('left')
+	game.move('right')
+	# game.move('right')
+	# game.move('right')

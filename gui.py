@@ -1,6 +1,6 @@
 import pygame
 import sys
-from game import *
+from game import Game2048
 
 BLACK = (0, 0, 0)
 WHITE = (200, 200, 200)
@@ -18,34 +18,33 @@ class Block(pygame.sprite.Sprite):
 			self.image = pygame.transform.scale(self.image, (10, 10))
 		self.rect = self.image.get_rect()
 		self.rect.topleft = location
-		# self.width, self.height = size, size
 		self.speed = 25
 		self.value= value
 
-	def update(self, i, j, gui):
+	def update(self, i, j, gui, rotate=0):
 		bx, by = self.rect.topleft
-		if gui.finish_all_animation:
-			self.image = load_image_from_value(self.value)
-		else:
-			if gui.animating_move:
-				if gui.move_tracker[i][j] != 0:
-					if gui.direction == 'up':  # up
-						self.rect.topleft = (bx, by-self.speed)
-					elif gui.direction == 'down':  # down
-						self.rect.topleft = (bx, by+self.speed)
-					elif gui.direction == 'left':  # left
-						self.rect.topleft = (bx-self.speed, by)
-					else:  # right
-						self.rect.topleft = (bx+self.speed, by)
-					gui.move_tracker[i][j] -= 0.25
-					self.image = load_image_from_value(self.value)
-			elif self.random_appear:
-				self.rect.topleft = (i*100, j*100)
-				self.image = pygame.transform.scale(self.image, (self.rect.width+10, self.rect.width+10))
-				self.rect = self.image.get_rect()
-				self.rect.topleft = (i*100, j*100)
-				if self.rect.width >= 100:
-					self.random_appear = False
+		if gui.animating_move:
+			if gui.move_tracker[i][j] > 0:
+				gui.move_tracker[i][j] -= 0.25
+				if gui.direction == 'up':  # up
+					self.rect.topleft = (bx, by-self.speed)
+				elif gui.direction == 'down':  # down
+					self.rect.topleft = (bx, by+self.speed)
+				elif gui.direction == 'left':  # left
+					self.rect.topleft = (bx-self.speed, by)
+				elif gui.direction == 'right':  # right
+					self.rect.topleft = (bx+self.speed, by)
+				# if gui.move_tracker[i][j]
+		if rotate != 0:
+			self.image = pygame.transform.rotate(self.image, rotate)
+			self.rect = self.image.get_rect(center=self.rect.center)
+		if self.random_appear:
+			self.rect.topleft = (i*100, j*100)
+			self.image = pygame.transform.scale(self.image, (self.rect.width+10, self.rect.width+10))
+			self.rect = self.image.get_rect()
+			self.rect.topleft = (i*100, j*100)
+			if self.rect.width >= self.size:
+				self.random_appear = False
 
 
 
@@ -53,6 +52,7 @@ class GUI():
 	def __init__(self, size=4, num_random_appear=2):
 		self.animating_move = None
 		self.finish_all_animation = None
+		self.rotate_animation = None
 		self.direction = None
 		self.WIDTH = self.HEIGHT = 400
 		self.SIZE = size
@@ -69,6 +69,7 @@ class GUI():
 			self.sprite_board.append([None] * self.SIZE)
 		self.sprite_to_move = []
 		self.move_tracker = None
+		self.merge_tracker = None
 		self.new_num_location = None
 
 		self.generate_sprites_from_board()
@@ -110,7 +111,7 @@ class GUI():
 		return lst
 	def move(self):
 		if not self.game.game_over:
-			self.move_tracker, self.new_num_location= self.game.move(self.direction)
+			self.move_tracker, self.merge_tracker, self.new_num_location= self.game.move(self.direction)
 		else:
 			print('You lose!!!')
 
@@ -121,7 +122,7 @@ def load_image_from_value(value):
 
 
 
-class main():
+def main():
 	gui = GUI(num_random_appear=2)
 	while True:
 		for event in pygame.event.get():
@@ -129,6 +130,9 @@ class main():
 				pygame.quit()
 				sys.exit()
 		if gui.finish_all_animation is False:
+			# move animation
+			rotated = 0
+			rotate_pos = []
 			if gui.animating_move:
 				for i in range(gui.SIZE):
 					for j in range(gui.SIZE):
@@ -136,12 +140,34 @@ class main():
 						block.update(i, j, gui)
 				if max([max(row) for row in gui.move_tracker]) == 0:
 					gui.animating_move = False
-					for value, location in gui.new_num_location:
-						block = Block(value, (location[1]*100, location[0]*100), random_appear=True)
-						gui.all_sprites.add(block)
-						gui.sprite_board[location[0]][location[1]] = block
-			else:
 
+					# merge animation
+					for i in range(gui.SIZE):
+						for j in range(gui.SIZE):
+							if gui.merge_tracker[i][j] != 0:
+								block = Block(gui.merge_tracker[i][j], (j*100, i*100))
+								gui.all_sprites.add(block)
+								gui.sprite_board[location[0]][location[1]] = block
+								rotate_pos.append((i, j, 0))
+					gui.rotate_animation = True
+								
+					# add random values after a move
+					if len(gui.new_num_location) != 0:
+						for value, location in gui.new_num_location:
+							block = Block(value, (location[1]*100, location[0]*100), random_appear=True)
+							gui.all_sprites.add(block)
+							gui.sprite_board[location[0]][location[1]] = block
+			# if gui.rotate_animation:
+			# 	for _ in range(3):
+			# 		for i, j, rotated in rotate_pos:
+			# 			gui.sprite_board[i][j].update(j, i, gui, 30)
+			# 	gui.rotate_animation = False
+
+			else:
+				# add random values animation
+				# for block in merge_blocks:
+				# 	block[0].update(block[1], block[j], gui, 10)
+				# 	rotated += 10
 				all_appeared = 0
 				if gui.new_num_location is not None:
 					for value, location in gui.new_num_location:
@@ -151,8 +177,6 @@ class main():
 							block = gui.sprite_board[location[0]][location[1]]
 							block.update(location[1], location[0], gui)
 				if all_appeared == len(gui.new_num_location):
-
-					print('all appeard')
 					gui.finish_all_animation = True
 					gui.generate_sprites_from_board()
 		else:
@@ -165,11 +189,8 @@ class main():
 				gui.direction = 'left'
 			elif key[pygame.K_RIGHT]:
 				gui.direction = 'right'
-
 			if key[pygame.K_UP] or key[pygame.K_DOWN] or key[pygame.K_LEFT] or key[pygame.K_RIGHT]:
 				gui.move()
-				
-
 				gui.finish_all_animation = False
 				gui.animating_move = True
 				gui.game._display()
