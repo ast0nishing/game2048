@@ -8,13 +8,17 @@ BACKGROUND_COLOR = (120, 120, 120)
 
 
 class Block(pygame.sprite.Sprite):
-	def __init__(self, value, location, size=100):
+	def __init__(self, value, location, size=100, random_appear=False):
 		super().__init__()
 		self.size = size
 		self.image = load_image_from_value(value)
+		self.random_appear = random_appear
+		if random_appear:
+			# self.location[0] += 
+			self.image = pygame.transform.scale(self.image, (10, 10))
 		self.rect = self.image.get_rect()
 		self.rect.topleft = location
-		self.width, self.height = size, size
+		# self.width, self.height = size, size
 		self.speed = 25
 		self.value= value
 
@@ -35,8 +39,13 @@ class Block(pygame.sprite.Sprite):
 						self.rect.topleft = (bx+self.speed, by)
 					gui.move_tracker[i][j] -= 0.25
 					self.image = load_image_from_value(self.value)
-			else:
-				pass
+			elif self.random_appear:
+				self.rect.topleft = (i*100, j*100)
+				self.image = pygame.transform.scale(self.image, (self.rect.width+10, self.rect.width+10))
+				self.rect = self.image.get_rect()
+				self.rect.topleft = (i*100, j*100)
+				if self.rect.width >= 100:
+					self.random_appear = False
 
 
 
@@ -59,9 +68,10 @@ class GUI():
 		for _ in range(self.SIZE):
 			self.sprite_board.append([None] * self.SIZE)
 		self.sprite_to_move = []
-		self.generate_sprites_from_board()
 		self.move_tracker = None
 		self.new_num_location = None
+
+		self.generate_sprites_from_board()
 		pygame.display.update()
 
 
@@ -69,7 +79,6 @@ class GUI():
 		self.all_sprites = pygame.sprite.Group()
 		for i in range(self.SIZE):
 			for j in range(self.SIZE):
-				# if self.game.board[i][j] != 0:
 				location = (self.BLOCK_SIZE*j, self.BLOCK_SIZE*i)
 				block = Block(self.game.board[i][j], location)
 				self.all_sprites.add(block)
@@ -105,12 +114,6 @@ class GUI():
 		else:
 			print('You lose!!!')
 
-	def add_random_block(self):
-		for value, location in self.new_num_location:
-			block = Block(value, location)
-			self.sprite_board[location[0]][location[1]] = block
-			self.all_sprites.add(block)
-		self.all_sprites.draw(self.screen)
 
 def load_image_from_value(value):
 	path = f'images/{value}.png'
@@ -133,8 +136,25 @@ class main():
 						block.update(i, j, gui)
 				if max([max(row) for row in gui.move_tracker]) == 0:
 					gui.animating_move = False
-					gui.generate_sprites_from_board()
+					for value, location in gui.new_num_location:
+						block = Block(value, (location[1]*100, location[0]*100), random_appear=True)
+						gui.all_sprites.add(block)
+						gui.sprite_board[location[0]][location[1]] = block
+			else:
+
+				all_appeared = 0
+				if gui.new_num_location is not None:
+					for value, location in gui.new_num_location:
+						if gui.sprite_board[location[0]][location[1]].random_appear == False:
+							all_appeared += 1
+						else :
+							block = gui.sprite_board[location[0]][location[1]]
+							block.update(location[1], location[0], gui)
+				if all_appeared == len(gui.new_num_location):
+
+					print('all appeard')
 					gui.finish_all_animation = True
+					gui.generate_sprites_from_board()
 		else:
 			key = pygame.key.get_pressed()
 			if key[pygame.K_UP]:
@@ -147,10 +167,12 @@ class main():
 				gui.direction = 'right'
 
 			if key[pygame.K_UP] or key[pygame.K_DOWN] or key[pygame.K_LEFT] or key[pygame.K_RIGHT]:
-			    gui.move()
-			    gui.finish_all_animation = False
-			    gui.animating_move = True
-			    gui.game._display()
+				gui.move()
+				
+
+				gui.finish_all_animation = False
+				gui.animating_move = True
+				gui.game._display()
 
 
 		gui.screen.fill(BACKGROUND_COLOR)

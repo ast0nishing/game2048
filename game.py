@@ -18,9 +18,10 @@ class Game2048:
 		# 		[4, 4, 0, 4]
 		# ]
 		self.move_tracker = [[0]*size for i in range(size)]
-		self._random_appear()
+		self.new_appear_location = self._random_appear()
 		if self.on_terminal:
 			self._display()
+
 		self.game_over = False
 
 	def _display(self) -> None:
