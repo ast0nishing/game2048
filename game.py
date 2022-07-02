@@ -3,25 +3,23 @@ from utils import *
 import copy
 
 class Game2048:
-	def __init__(self, size=4, num_random_appear=2, on_terminal=False):
-		assert size >= num_random_appear, "num_random_appear can't be greater than size"
+	def __init__(self, size=4, num_random_appear=2, max_score=2048, on_terminal=False):
+		if size <= num_random_appear:
+			raise Exception("num_random_appear can't be greater than size")
+		self.max_score = max_score
 		self.on_terminal = on_terminal
 		self.size = size
 		self.num_random_appear = num_random_appear
 		self.board = []
 		for _ in range(size):
 			self.board.append([0] * size)
-		self.board = [
-				[0, 0, 2, 0],
-				[0, 2, 2, 0],
-				[0, 2, 2, 0],
-				[0, 0, 2, 0]
-		]
 		self.new_appear_location = self._random_appear(4)
 		if self.on_terminal:
 			self._display()
 
 		self.game_over = False
+		self.is_win = False
+		self.is_lose = False
 
 	def _display(self) -> None:
 		largest_num = get_largest_num(self.board)
@@ -52,8 +50,22 @@ class Game2048:
 		if direction in ['left', 'right']:
 			for i in range(self.size):
 				for j in range(self.size-1):
-					if self.board[i][j] == self.board[i][j+1]:
+					# chek move horizontal
+					if self.board[i][j] == 0 or self.board[i][j] == self.board[i][j+1] :
 						return True
+			for i in range(self.size):
+				if self.board[i][self.size-1] == 0:
+					return True
+		else:
+			for i in range(self.size-1):
+				for j in range(self.size):
+					# chek move horizontal
+					if self.board[i][j] == 0 or self.board[i][j] == self.board[i+1][j] :
+						return True
+			for i in range(self.size):
+				if self.board[self.size-1][i] == 0:
+					return True
+		return False
 
 
 	def _move(self, direction) -> list[list[int]]:
@@ -131,20 +143,12 @@ class Game2048:
 			return move_tracker, merge_tracker
 
 
-	def _random_appear(self, num_random_appear) -> list[int, tuple[int]]:
-		# get all 0 positions
+	def _random_appear(self, num_random_appear: int) -> list[int, tuple[int]]:
 		available_positions = get_available_positions(self.board)
 		if len(available_positions) == 0:
 			return
 		choices = [2, 4]
-		weights = [4, 1]
-		# check_largest_num = [8, 16, 32, 64, 128, 256, 512]
-		# for i, num in enumerate(check_largest_num):
-		# 	if get_largest_num(self.board) > num:
-		# 		choices.append(num)
-		# 		weights.append(9-i)
-		# 		continue
-		# 	break
+		weights = [5, 2]
 		num_and_pos = []
 		pos = random.choices(available_positions, k=num_random_appear)
 		for i in range(num_random_appear):
@@ -154,7 +158,7 @@ class Game2048:
 		return num_and_pos
 
 	def _is_win(self):
-			return True if get_largest_num(self.board) == 2048 else False
+			return True if get_largest_num(self.board) == self.max_score else False
 
 	def _is_lose(self):
 		if len(get_available_positions(self.board)) == 0:
@@ -168,14 +172,10 @@ class Game2048:
 	def check_game_state(self):
 		if self._is_lose():
 			self.game_over = True
+			self.is_lose = True
 			print('you lose!!!')
 		if self._is_win():
 			self.game_over = True
+			self.is_win = True
 			print('you won!!!!!!')
 
-
-if __name__ == '__main__':
-	game = Game2048(size=4, num_random_appear=2, on_terminal=True)
-	# game.move('up')
-	# game.move('right')
-	# game.move('right')
