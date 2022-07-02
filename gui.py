@@ -44,13 +44,14 @@ class GUI():
 		self.NUM_RANDOM_APPEAR = num_random_appear
 		self.MAX_SCORE = max_score
 		
-		self.WIDTH = self.HEIGHT = 400
+		self.WIDTH = self.HEIGHT =size*100
 		self.SIZE = size
 		self.BLOCK_SIZE = self.WIDTH // self.SIZE
 		self.game = Game2048(size, num_random_appear, max_score)
 
 		pygame.init()
-		pygame.display.set_caption('2048')
+		title = f'size: {size} - random:{num_random_appear} - max_score: {max_score}'
+		pygame.display.set_caption(title)
 		self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
 		self.clock = pygame.time.Clock()
 		self.init_parameters()
@@ -161,11 +162,8 @@ def main(size=4, num_random_appear=1, max_score=2048):
 						gui.finish_all_animation = False
 						gui.animating_move = True
 						gui.game._display()
-					else:
-						print('cant move')
 		elif display_last:
 			display_last = False
-
 			gui.generate_sprites_from_board()
 		
 		if gui.game.game_over and gui.game.is_lose:
